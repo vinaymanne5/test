@@ -1,1 +1,187 @@
-test
+
+1. Dockerfile for NGINX 1.19
+# Use a secure and minimal base image
+FROM debian:bullseye-slim
+
+# Set metadata
+LABEL maintainer="Your Name <your.email@example.com>" \
+      description="NGINX 1.19 container with security best practices" \
+      version="1.19"
+
+# Install NGINX 1.19 and dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends nginx=1.19.* && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Switch to non-root user
+RUN useradd -r -d /var/cache/nginx -s /sbin/nologin nginx && \
+    mkdir -p /var/cache/nginx && \
+    chown -R nginx:nginx /var/cache/nginx /var/log/nginx
+
+# Copy configuration (if required)
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port
+EXPOSE 80
+
+# Set the default command
+USER nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+####################################################################################
+
+2. Kubernetes StatefulSet for NGINX
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  serviceName: "nginx"
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: your-docker-registry/nginx:1.19
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+  volumeClaimTemplates:
+  - metadata:
+      name: nginx-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+
+
+####################################################################################
+3. Build a Deployment Pipeline
+
+name: Build and Deploy NGINX
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build Docker Image
+      run: docker build -t your-docker-repo/nginx:1.19 .
+
+    - name: Push Docker Image
+      run: docker push your-docker-repo/nginx:1.19
+
+    - name: Kubernetes Deployment
+      uses: azure/k8s-deploy@v3
+      with:
+        namespace: default
+        manifests: |
+          ./k8s/statefulset.yml
+
+####################################################################################
+4. Text Manipulation Problem
+Problem: Extract the 3rd column of a CSV file where the 2nd column contains "error".
+
+awk -F, '$2 ~ /error/ {print $3}' file.csv
+
+
+####################################################################################
+5. Text Manipulation with OOP
+class CsvProcessor:
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def extract_error_column(self):
+        with open(self.file_path, 'r') as file:
+            for line in file:
+                columns = line.strip().split(',')
+                if 'error' in columns[1]:
+                    print(columns[2])
+
+processor = CsvProcessor('file.csv')
+processor.extract_error_column()
+
+####################################################################################
+
+6. Sum of Even Fibonacci Numbers
+class Fibonacci:
+    def __init__(self):
+        self.a, self.b = 0, 1
+
+    def generate_even_fib(self, count):
+        even_fibs = []
+        while len(even_fibs) < count:
+            self.a, self.b = self.b, self.a + self.b
+            if self.a % 2 == 0:
+                even_fibs.append(self.a)
+        return even_fibs
+
+    def sum_even_fibs(self, count):
+        return sum(self.generate_even_fib(count))
+
+fib = Fibonacci()
+print(fib.sum_even_fibs(100))
+
+
+####################################################################################
+7. Intersection of Sorted Arrays
+def intersect_sorted_arrays(arr1, arr2):
+    i, j = 0, 0
+    result = []
+    while i < len(arr1) and j < len(arr2):
+        if arr1[i] == arr2[j]:
+            if not result or result[-1] != arr1[i]:
+                result.append(arr1[i])
+            i += 1
+            j += 1
+        elif arr1[i] < arr2[j]:
+            i += 1
+        else:
+            j += 1
+    return result
+
+print(intersect_sorted_arrays([1, 2, 4, 5], [2, 4, 6]))
+
+
+####################################################################################
+8. Decimal Digit Transformation
+def calculate_x_transform(x):
+    if not isinstance(x, int) or x < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    return sum(int(str(x) * i) for i in range(1, 5))
+
+print(calculate_x_transform(3))  # Output: 3702
+
